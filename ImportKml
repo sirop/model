@@ -1,0 +1,33 @@
+void FileReaderPositionProviderPluginPrivate::importKmlFromData()
+{
+    GeoDataParser parser( GeoData_KML );
+
+    QString filename = MarbleDirs::path( "routing" );
+    filename += "/route.kml";
+    QFile file( filename );
+    if ( !file.exists() ) {
+        mDebug() << "The GPS file reader plugin expects routing/route.kml to exist in the local marble dir.";
+        mDebug() << "Create a route and exit Marble to have it created automatically.";
+        return;
+    }
+
+    // Open file in right mode
+    file.open( QIODevice::ReadOnly );
+
+    if ( !parser.read( &file ) ) {
+        mDebug() << "Could not import kml file. No position updates will happen.";
+        return;
+    }
+
+    GeoDocument* doc = parser.releaseDocument();
+    if ( doc ) {
+        GeoDataDocument* document = dynamic_cast<GeoDataDocument*>( doc );
+        if ( document && document->size() > 0 ) {
+            document->setDocumentRole( UserDocument );
+            document->setFileName( filename );
+            createSimulationPlacemarks( dynamic_cast<GeoDataDocument*>( &document->last() ) );
+        }
+    }
+
+    file.close();
+}
